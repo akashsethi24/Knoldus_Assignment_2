@@ -50,11 +50,12 @@ class FireDepartment {
     getDataFrame.select("Call Type", "Incident Number").as[(String, String)].groupBy("Call Type").count().as[(String, Long)].collectAsList().toList.toMap
   }
 
+
   def maxCallInNeighbour: String = {
 
     import spark.implicits._
-    val districtData = getDataFrame.select("City", "Neighborhood  District", "Call Date").as[(String, String, String)].filter(field => field._1 == "San Francisco" && field._3.split("/")(2).toInt == 2016).map { field => field._2 }
-    districtData.groupBy("value").count().sort("value").as[(String, Long)].first()._1
+    val districtData = getDataFrame.select("City", "Neighborhood  District", "Call Date").as[(String, String, String)].filter(field => field._1 == "San Francisco" && field._3.split("/")(2).toInt == 2015).map { field => field._2 }
+    districtData.groupBy("value").count().sort("count").as[(String, Long)].first()._1
   }
 }
 
