@@ -45,8 +45,16 @@ class FireDepartment {
   def getIncidentWithCallType: Map[String, Long] = {
 
     import spark.implicits._
+
     import collection.JavaConversions._
     getDataFrame.select("Call Type", "Incident Number").as[(String, String)].groupBy("Call Type").count().as[(String, Long)].collectAsList().toList.toMap
+  }
+
+  def maxCallInNeighbour: String = {
+
+    import spark.implicits._
+    val districtData = getDataFrame.select("City", "Neighborhood  District", "Call Date").as[(String, String, String)].filter(field => field._1 == "San Francisco" && field._3.split("/")(2).toInt == 2016).map { field => field._2 }
+    districtData.groupBy("value").count().sort("value").as[(String, Long)].first()._1
   }
 }
 
@@ -57,5 +65,6 @@ object FireDepartment extends App {
   println("Q1. Types Of Call \n" + obj.getCallType)
   println("Q2. Incident with Call Type " + obj.getIncidentWithCallType)
   println("Q3. Year Of Service = " + obj.getYears)
+  println("Q5. Last Year max Call in Neighborhood  District of SF is " + obj.maxCallInNeighbour)
 
 }
