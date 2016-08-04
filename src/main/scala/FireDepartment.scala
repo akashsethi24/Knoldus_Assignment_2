@@ -1,5 +1,6 @@
+import java.sql.Date
 import java.text.SimpleDateFormat
-import java.util.{Calendar, Date}
+import java.util.Calendar
 
 import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
 
@@ -9,35 +10,18 @@ import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
 
 object GlobalData {
 
-  val spark = SparkSession.builder().appName("Fire Call-On-Service").master("local").getOrCreate()
+  val spark = SparkSession.builder().appName("Fire Call-On-Service").master("local").enableHiveSupport().getOrCreate()
 
-  implicit val myOrdering = new Ordering[Date] {
-    override def compare(dateOne: Date, dateTwo: Date): Int = {
-      dateOne.getTime.compareTo(dateTwo.getTime)
-    }
+  def getDataSet: Dataset[String] = {
+
+    spark.read.option("header", "true").csv("/home/akash/Documents/Hadoop/Fire_Department_Calls_for_Service.csv").as[String]
   }
-
-  def getDataSet: DataFrame = {
-
-    spark.read.option("header", "true").csv("/home/akash/Documents/Hadoop/Fire_Department_Calls_for_Service.csv")
-  }
-
-  import collection.JavaConversions._
 
   implicit val encoder = Encoders.STRING
-  implicit val dateEncoder = Encoders.DATE
-
-  lazy val maxDate: Date = getDateList.max(myOrdering)
 
   def getSingleColumnData(columnName: String): Dataset[String] = {
 
     getDataSet.select(columnName).as[String]
-  }
-
-  def getDateList: List[Date] = {
-    val dateDataSet = getSingleColumnData("Call Date")
-    val formatter = new SimpleDateFormat("MM/dd/yyyy")
-    dateDataSet.collectAsList().toList.map { date => formatter.parse(date) }
   }
 
 }
@@ -52,13 +36,33 @@ class FireDepartment {
     getSingleColumnData("Call Type").as[String].distinct().collectAsList().toList
   }
 
+  def incidenceWithCall: Map[String, Long] = {
+
+    val dataset = getDataSet
+    dataset
+  }
+
   def getYears: Long = {
 
-    import collection.JavaConversions._
-    val dateDataSet = getSingleColumnData("Call Date")
+    implicit val encoder = Encoders.STRING
+    implicit val dateEncoder = Encoders.DATE
+
+    val strDataSet = getSingleColumnData("Call Date")
     val formatter = new SimpleDateFormat("MM/dd/yyyy")
-    val dateList = dateDataSet.collectAsList().toList.map { date => formatter.parse(date) }
-    val minDate = dateList.min(myOrdering)
+
+    val myUdf = org.apache.spark.sql.functions.udf((date: String) => new java.sql.Date(formatter.parse(date).getTime))
+
+    val dateDataSet = strDataSet.withColumn("Call Date", myUdf(strDataSet("Call Date"))).as[Date]
+
+    val dataset = dateDataSet.toDF("call_date").as[Date]
+    dataset.createOrReplaceTempView("fire_call_date")
+
+    val minDateDataset = dataset.sqlContext.sql("SELECT MIN(call_date) as maxDate FROM fire_call_date").as[Date]
+    val maxDateDataset = dataset.sqlContext.sql("SELECT MAX(call_date) as minDate FROM fire_call_date").as[Date]
+
+    val minDate = minDateDataset.first()
+    val maxDate = maxDateDataset.first()
+
     val calender = Calendar.getInstance()
     calender.setTime(maxDate)
     val maxYear = calender.get(Calendar.YEAR).toLong
