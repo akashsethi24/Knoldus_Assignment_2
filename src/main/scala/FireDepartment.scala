@@ -66,7 +66,7 @@ class FireDepartment {
     val orderedDateDataset = dateDataset.withColumn("Call Date", dateUdf(dateDataset("Call Date"))).as[Date].orderBy($"Call Date".desc)
     val latestDate = orderedDateDataset.first()
     val previousDate = new Date(latestDate.getTime - (7 * 24 * 3600 * 1000).toLong)
-    orderedDateDataset.filter(date => date.getTime >= previousDate.getTime).count()
+    orderedDateDataset.filter(date => date.getTime > previousDate.getTime).count()
   }
 
   def maxCallInNeighbour: String = {
