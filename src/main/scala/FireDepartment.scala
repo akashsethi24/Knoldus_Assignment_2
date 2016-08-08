@@ -81,8 +81,8 @@ object FireDepartment extends App {
 
   val obj = new FireDepartment
 
-  println("Q1. Types Of Call \n" + obj.getCallType)
-  println("Q2. Incident with Call Type " + obj.getIncidentWithCallType)
+  println("Q1. Types Of Call Count \n" + obj.getCallType.length)
+  println("Q2. Incident with Call Type Count " + obj.getIncidentWithCallType.size)
   println("Q3. Year Of Service = " + obj.getYears)
   println("Q4 Total Calls in Last Seven Days are " + obj.getLastSevenDayCalls)
   println("Q5. Last Year max Call in Neighborhood  District of SF is " + obj.maxCallInNeighbour)
